@@ -4,7 +4,6 @@ enum TipoNotificacion {
   validacion,
   observacion,
   rechazo,
-  publicacion,
   enRevision,
   cuentaActivada,
   rolActualizado,
@@ -15,7 +14,6 @@ enum TipoNotificacion {
       case TipoNotificacion.validacion: return "Validación";
       case TipoNotificacion.observacion: return "Observación";
       case TipoNotificacion.rechazo: return "Rechazo";
-      case TipoNotificacion.publicacion: return "Publicación";
       case TipoNotificacion.enRevision: return "En revisión";
       case TipoNotificacion.cuentaActivada: return "Cuenta activada";
       case TipoNotificacion.rolActualizado: return "Rol actualizado";
@@ -28,7 +26,6 @@ enum TipoNotificacion {
       case TipoNotificacion.validacion: return Icons.verified; // checkmark.seal.fill
       case TipoNotificacion.observacion: return Icons.feedback; // exclamationmark.bubble.fill
       case TipoNotificacion.rechazo: return Icons.cancel; // xmark.octagon.fill
-      case TipoNotificacion.publicacion: return Icons.public; // globe.americas.fill
       case TipoNotificacion.enRevision: return Icons.search; // magnifyingglass.circle.fill
       case TipoNotificacion.cuentaActivada: return Icons.person_add_alt_1; // person.crop.circle.badge.checkmark
       case TipoNotificacion.rolActualizado: return Icons.manage_accounts; // person.2.crop.square.stack.fill
@@ -41,7 +38,6 @@ enum TipoNotificacion {
       case TipoNotificacion.validacion: return Colors.green;
       case TipoNotificacion.observacion: return Colors.orange;
       case TipoNotificacion.rechazo: return Colors.red;
-      case TipoNotificacion.publicacion: return Colors.blue;
       case TipoNotificacion.enRevision: return Colors.indigo;
       case TipoNotificacion.cuentaActivada: return const Color(0xFF2D6A4F);
       case TipoNotificacion.rolActualizado: return Colors.purple;
@@ -70,6 +66,19 @@ class Notificacion {
     this.registroRelacionadoId,
     this.usuarioId,
   });
+
+  Notificacion copyWith({bool? leida}) {
+    return Notificacion(
+      id: id,
+      tipo: tipo,
+      titulo: titulo,
+      descripcion: descripcion,
+      fecha: fecha,
+      leida: leida ?? this.leida,
+      registroRelacionadoId: registroRelacionadoId,
+      usuarioId: usuarioId,
+    );
+  }
 
   factory Notificacion.fromJson(Map<String, dynamic> json) {
     return Notificacion(

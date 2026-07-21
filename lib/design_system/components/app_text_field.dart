@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import '../theme/brand_colors.dart';
 
-enum AppTextFieldKind { text, numericWithUnit, password, multiline }
+enum AppTextFieldKind { text, numeric, password, multiline }
 
 class AppTextField extends StatefulWidget {
   final String title;
   final String placeholder;
   final AppTextFieldKind kind;
-  final String? unit; // for numericWithUnit
-  final TextEditingController controller;
+  final String? unit; // for numeric
+  final TextEditingController? controller;
+  final String? initialValue;
   final void Function(String)? onChanged;
 
   const AppTextField({
@@ -17,7 +18,8 @@ class AppTextField extends StatefulWidget {
     this.placeholder = "",
     this.kind = AppTextFieldKind.text,
     this.unit,
-    required this.controller,
+    this.controller,
+    this.initialValue,
     this.onChanged,
   });
 
@@ -27,8 +29,21 @@ class AppTextField extends StatefulWidget {
 
 class _AppTextFieldState extends State<AppTextField> {
   bool _isSecure = true;
+  late TextEditingController _controller;
 
   @override
+  void initState() {
+    super.initState();
+    _controller = widget.controller ?? TextEditingController(text: widget.initialValue);
+  }
+
+  @override
+  void dispose() {
+    if (widget.controller == null) {
+      _controller.dispose();
+    }
+    super.dispose();
+  }
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,7 +83,7 @@ class _AppTextFieldState extends State<AppTextField> {
     switch (widget.kind) {
       case AppTextFieldKind.text:
         return TextField(
-          controller: widget.controller,
+          controller: _controller,
           onChanged: widget.onChanged,
           decoration: InputDecoration(
             hintText: widget.placeholder,
@@ -78,9 +93,9 @@ class _AppTextFieldState extends State<AppTextField> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
         );
-      case AppTextFieldKind.numericWithUnit:
+      case AppTextFieldKind.numeric:
         return TextField(
-          controller: widget.controller,
+          controller: _controller,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           onChanged: widget.onChanged,
           decoration: InputDecoration(
@@ -94,7 +109,7 @@ class _AppTextFieldState extends State<AppTextField> {
         );
       case AppTextFieldKind.password:
         return TextField(
-          controller: widget.controller,
+          controller: _controller,
           obscureText: _isSecure,
           onChanged: widget.onChanged,
           decoration: InputDecoration(
@@ -115,7 +130,7 @@ class _AppTextFieldState extends State<AppTextField> {
         );
       case AppTextFieldKind.multiline:
         return TextField(
-          controller: widget.controller,
+          controller: _controller,
           minLines: 3,
           maxLines: 8,
           onChanged: widget.onChanged,

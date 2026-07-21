@@ -1,6 +1,6 @@
-import '../constants/estado_registro.dart';
-import '../constants/habito.dart';
-import '../constants/tipo_vida.dart';
+import '../../core/constants/estado_registro.dart';
+import '../../core/constants/habito.dart';
+import '../../core/constants/tipo_vida.dart';
 import 'datos_dasometricos.dart';
 import 'foto.dart';
 import 'ubicacion.dart';
@@ -51,7 +51,6 @@ class Especie {
   final Habito habito;
   final TipoVida tipoVida;
   final List<String> distribucionPaises;
-  final String descripcion;
   final Map<String, String> caracteres;
   final DatosDasometricos? datosDasometricos;
   final Ubicacion ubicacion;
@@ -72,7 +71,6 @@ class Especie {
     required this.habito,
     required this.tipoVida,
     required this.distribucionPaises,
-    required this.descripcion,
     required this.caracteres,
     this.datosDasometricos,
     required this.ubicacion,
@@ -83,6 +81,50 @@ class Especie {
     required this.fechaEnvio,
     required this.historialEstados,
   });
+
+  /// Portada de la especie: la primera foto, como en iOS (`fotos.first?.url`).
+  String? get portadaUrl => fotos.isNotEmpty ? fotos.first.url : null;
+
+  Especie copyWith({
+    String? catalogId,
+    String? nombreCientifico,
+    String? autorNombre,
+    String? familia,
+    String? nombreLocal,
+    Habito? habito,
+    TipoVida? tipoVida,
+    List<String>? distribucionPaises,
+    Map<String, String>? caracteres,
+    DatosDasometricos? datosDasometricos,
+    Ubicacion? ubicacion,
+    List<Foto>? fotos,
+    EstadoRegistro? estado,
+    String? codigoSeguimiento,
+    String? registradorId,
+    DateTime? fechaEnvio,
+    List<HistorialEstado>? historialEstados,
+  }) {
+    return Especie(
+      id: id,
+      catalogId: catalogId ?? this.catalogId,
+      nombreCientifico: nombreCientifico ?? this.nombreCientifico,
+      autorNombre: autorNombre ?? this.autorNombre,
+      familia: familia ?? this.familia,
+      nombreLocal: nombreLocal ?? this.nombreLocal,
+      habito: habito ?? this.habito,
+      tipoVida: tipoVida ?? this.tipoVida,
+      distribucionPaises: distribucionPaises ?? this.distribucionPaises,
+      caracteres: caracteres ?? this.caracteres,
+      datosDasometricos: datosDasometricos ?? this.datosDasometricos,
+      ubicacion: ubicacion ?? this.ubicacion,
+      fotos: fotos ?? this.fotos,
+      estado: estado ?? this.estado,
+      codigoSeguimiento: codigoSeguimiento ?? this.codigoSeguimiento,
+      registradorId: registradorId ?? this.registradorId,
+      fechaEnvio: fechaEnvio ?? this.fechaEnvio,
+      historialEstados: historialEstados ?? this.historialEstados,
+    );
+  }
 
   factory Especie.fromJson(Map<String, dynamic> json) {
     return Especie(
@@ -95,7 +137,6 @@ class Especie {
       habito: Habito.values.firstWhere((e) => e.name == json['habito'], orElse: () => Habito.arbol),
       tipoVida: TipoVida.values.firstWhere((e) => e.name == json['tipoVida'], orElse: () => TipoVida.terrestre),
       distribucionPaises: List<String>.from(json['distribucionPaises'] ?? []),
-      descripcion: json['descripcion'],
       caracteres: Map<String, String>.from(json['caracteres'] ?? {}),
       datosDasometricos: json['datosDasometricos'] != null ? DatosDasometricos.fromJson(json['datosDasometricos']) : null,
       ubicacion: Ubicacion.fromJson(json['ubicacion']),
@@ -119,7 +160,6 @@ class Especie {
       'habito': habito.name,
       'tipoVida': tipoVida.name,
       'distribucionPaises': distribucionPaises,
-      'descripcion': descripcion,
       'caracteres': caracteres,
       'datosDasometricos': datosDasometricos?.toJson(),
       'ubicacion': ubicacion.toJson(),
@@ -130,5 +170,12 @@ class Especie {
       'fechaEnvio': fechaEnvio.toIso8601String(),
       'historialEstados': historialEstados.map((h) => h.toJson()).toList(),
     };
+  }
+
+  /// Título inteligente para mostrar en la interfaz
+  String get displayTitle {
+    if (nombreCientifico.trim().isNotEmpty) return nombreCientifico;
+    if (nombreLocal.trim().isNotEmpty) return nombreLocal;
+    return 'Registro sin nombre';
   }
 }

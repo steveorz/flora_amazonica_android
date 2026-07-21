@@ -1,60 +1,27 @@
 import 'package:flutter/material.dart';
+
+import '../../core/constants/app_error_kind.dart';
 import 'empty_state.dart';
 
-enum AppErrorKind { sinConexion, servidor, sinPermisos }
+export '../../core/constants/app_error_kind.dart';
 
-extension AppErrorKindExtension on AppErrorKind {
-  IconData get systemImage {
-    switch (this) {
-      case AppErrorKind.sinConexion:
-        return Icons.wifi_off;
-      case AppErrorKind.servidor:
-        return Icons.cloud_off;
-      case AppErrorKind.sinPermisos:
-        return Icons.lock;
-    }
-  }
+/// Estado de error con acción de reintento. Espejo de `ErrorState` (iOS).
+///
+/// El tipo de error vive en `core/constants/app_error_kind.dart`, que es lo que
+/// exponen los Services; esta pantalla sólo lo pinta.
+class ErrorStateView extends StatelessWidget {
+  const ErrorStateView({super.key, required this.kind, this.onRetry});
 
-  String get title {
-    switch (this) {
-      case AppErrorKind.sinConexion:
-        return "Sin conexión";
-      case AppErrorKind.servidor:
-        return "Error del servidor";
-      case AppErrorKind.sinPermisos:
-        return "Sin permisos";
-    }
-  }
-
-  String get message {
-    switch (this) {
-      case AppErrorKind.sinConexion:
-        return "Revisa tu conexión a internet e inténtalo de nuevo.";
-      case AppErrorKind.servidor:
-        return "Algo salió mal. Vuelve a intentar en un momento.";
-      case AppErrorKind.sinPermisos:
-        return "No tienes permisos para ver este contenido.";
-    }
-  }
-}
-
-class ErrorState extends StatelessWidget {
   final AppErrorKind kind;
   final VoidCallback? onRetry;
-
-  const ErrorState({
-    super.key,
-    required this.kind,
-    this.onRetry,
-  });
 
   @override
   Widget build(BuildContext context) {
     return EmptyState(
-      systemImage: kind.systemImage,
+      systemImage: kind.icon,
       title: kind.title,
       message: kind.message,
-      actionTitle: onRetry != null ? "Reintentar" : null,
+      actionTitle: onRetry != null ? 'Reintentar' : null,
       action: onRetry,
     );
   }

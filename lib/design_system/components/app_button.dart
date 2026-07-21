@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../theme/brand_colors.dart';
 
 enum AppButtonVariant { primario, atencion, secundario, terciario, destructivo, icono }
 
@@ -9,74 +8,75 @@ class AppButton extends StatelessWidget {
   final AppButtonVariant variant;
   final VoidCallback action;
 
+  /// Equivale a `.disabled(...)` en SwiftUI: con `false` el botón se apaga.
+  final bool enabled;
+
   const AppButton({
     super.key,
     this.title = "",
     this.systemImage,
     this.variant = AppButtonVariant.primario,
     required this.action,
+    this.enabled = true,
   });
+
+  /// `null` apaga el botón en todos los widgets de Material.
+  VoidCallback? get _onPressed => enabled ? action : null;
 
   @override
   Widget build(BuildContext context) {
     switch (variant) {
       case AppButtonVariant.primario:
-        return ElevatedButton(
-          onPressed: action,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: BrandColors.brandPrimary,
-            foregroundColor: BrandColors.onBrand,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            elevation: 0,
+        return FilledButton(
+          onPressed: _onPressed,
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           ),
           child: _buildLabel(),
         );
       case AppButtonVariant.atencion:
-        return ElevatedButton(
-          onPressed: action,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            elevation: 0,
+        return FilledButton(
+          onPressed: _onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.errorContainer,
+            foregroundColor: Theme.of(context).colorScheme.onErrorContainer,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           ),
           child: _buildLabel(),
         );
       case AppButtonVariant.secundario:
         return FilledButton.tonal(
-          onPressed: action,
+          onPressed: _onPressed,
           style: FilledButton.styleFrom(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           ),
           child: _buildLabel(),
         );
       case AppButtonVariant.terciario:
         return TextButton(
-          onPressed: action,
+          onPressed: _onPressed,
           style: TextButton.styleFrom(
-            foregroundColor: BrandColors.brandPrimary,
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           ),
           child: _buildLabel(),
         );
       case AppButtonVariant.destructivo:
-        return ElevatedButton(
-          onPressed: action,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red,
-            foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            elevation: 0,
+        return FilledButton(
+          onPressed: _onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.error,
+            foregroundColor: Theme.of(context).colorScheme.onError,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
           ),
           child: _buildLabel(),
         );
       case AppButtonVariant.icono:
         return IconButton(
-          onPressed: action,
+          onPressed: _onPressed,
           icon: Icon(systemImage ?? Icons.circle),
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.surfaceContainerHighest,

@@ -1,6 +1,19 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Backend, Cloudinary, teselas de OpenStreetMap y el WebView del validador -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- ConnectivityStore observa el estado de la red -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- LocationProvider: GPS del paso de Ubicación del wizard -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Captura de fotos del registro -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+
     <application
-        android:label="flora_amazonica"
+        android:label="FlorAmaz"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

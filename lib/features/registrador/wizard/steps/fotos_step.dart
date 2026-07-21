@@ -1,143 +1,148 @@
 import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import '../wizard_provider.dart';
-import '../../../../../data/models/especie.dart';
-import '../../../../../design_system/theme/brand_colors.dart';
 
+import '../../../../data/models/foto.dart';
+import '../wizard_provider.dart';
+import 'step_widgets.dart';
+
+/// R-12: 5 fotos obligatorias, una por tipo. Espejo de `FotosStep` (iOS).
 class FotosStep extends ConsumerWidget {
-  const FotosStep({super.key});
+  const FotosStep({super.key, required this.args});
+
+  final WizardArgs args;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(wizardProvider);
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text("Fotografías", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          const Text("Captura una foto por cada tipo. Toca cualquier foto para reemplazarla.", style: TextStyle(color: Colors.grey, fontSize: 14)),
-          const SizedBox(height: 18),
-          
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.0,
-            ),
-            itemCount: TipoFoto.values.length,
-            itemBuilder: (context, index) {
-              final tipo = TipoFoto.values[index];
-              return _FotoSlotView(tipo: tipo);
-            },
-          ),
-          
-          const SizedBox(height: 24),
-          _buildContador(state),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildContador(WizardState state) {
+    final estado = ref.watch(wizardProvider(args));
+    final theme = Theme.of(context);
+    final capturadas = estado.draft.fotosCapturadas.length;
     final total = TipoFoto.values.length;
-    final n = state.draft.fotosData.length;
-    final completo = n == total;
-    
-    return Row(
+    final completo = capturadas == total;
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
       children: [
-        Icon(
-          completo ? Icons.check_circle : Icons.photo_library,
-          color: completo ? Colors.green : Colors.grey,
+        const StepHeader(
+          titulo: 'Fotografías',
+          detalle: 'Captura una foto por cada tipo. Toca cualquier foto para reemplazarla.',
         ),
-        const SizedBox(width: 8),
-        Text(
-          "$n de $total fotos capturadas",
-          style: const TextStyle(color: Colors.grey, fontSize: 16),
+        const SizedBox(height: 16),
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.85, // etiqueta + cuadrado
+          children: [
+            for (final tipo in TipoFoto.values) _SlotFoto(args: args, tipo: tipo),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Icon(
+              completo ? Icons.check_circle : Icons.photo_library_outlined,
+              color: completo ? Colors.green : theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Text('$capturadas de $total fotos capturadas',
+                style: theme.textTheme.bodyMedium),
+          ],
         ),
       ],
     );
   }
 }
 
-class _FotoSlotView extends ConsumerStatefulWidget {
+class _SlotFoto extends ConsumerStatefulWidget {
+  const _SlotFoto({required this.args, required this.tipo});
+
+  final WizardArgs args;
   final TipoFoto tipo;
-  const _FotoSlotView({required this.tipo});
 
   @override
-  ConsumerState<_FotoSlotView> createState() => _FotoSlotViewState();
+  ConsumerState<_SlotFoto> createState() => _SlotFotoState();
 }
 
-class _FotoSlotViewState extends ConsumerState<_FotoSlotView> {
-  final ImagePicker _picker = ImagePicker();
+class _SlotFotoState extends ConsumerState<_SlotFoto> {
+  /// El backend rechaza en silencio los archivos grandes: limitamos el lado
+  /// mayor a 1280 px y comprimimos al 70%, igual que iOS.
+  static const _ladoMaximo = 1280.0;
+  static const _calidadJpeg = 70;
 
-  Future<void> _takePhoto() async {
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-    if (photo != null) {
-      final bytes = await photo.readAsBytes();
-      
-      final notifier = ref.read(wizardProvider.notifier);
-      final state = ref.read(wizardProvider);
-      
-      state.draft.fotosData[widget.tipo] = bytes;
-      notifier.forceUpdate();
+  bool _cargando = false;
+
+  Future<void> _elegirFoto() async {
+    setState(() => _cargando = true);
+    try {
+      final imagen = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+        maxWidth: _ladoMaximo,
+        maxHeight: _ladoMaximo,
+        imageQuality: _calidadJpeg,
+      );
+      if (imagen == null) return;
+
+      final bytes = await imagen.readAsBytes();
+      await ref.read(wizardProvider(widget.args).notifier).guardarFoto(widget.tipo, bytes);
+    } finally {
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(wizardProvider);
-    final Uint8List? data = state.draft.fotosData[widget.tipo];
-    final capturada = data != null;
-    final label = widget.tipo.toString().split('.').last.toUpperCase();
+    final theme = Theme.of(context);
+    final estado = ref.watch(wizardProvider(widget.args));
+    final Uint8List? bytes = estado.fotoData[widget.tipo];
+    final capturada = estado.draft.fotosCapturadas.contains(widget.tipo);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-        const SizedBox(height: 4),
+        Text(widget.tipo.label,
+            style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
         Expanded(
-          child: InkWell(
-            onTap: _takePhoto,
-            borderRadius: BorderRadius.circular(12),
-            child: Container(
-              decoration: BoxDecoration(
-                color: capturada ? Colors.black : Theme.of(context).brightness == Brightness.dark ? Colors.grey.shade800 : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(12),
-                image: capturada ? DecorationImage(
-                  image: MemoryImage(data),
-                  fit: BoxFit.cover,
-                ) : null,
-              ),
-              child: !capturada ? const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.camera_alt, color: Colors.grey, size: 32),
-                    SizedBox(height: 4),
-                    Text("Tocar para agregar", style: TextStyle(color: Colors.grey, fontSize: 10)),
-                  ],
-                ),
-              ) : Stack(
+          child: GestureDetector(
+            onTap: _cargando ? null : _elegirFoto,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                fit: StackFit.expand,
                 children: [
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
-                        shape: BoxShape.circle,
+                  if (bytes != null)
+                    Image.memory(bytes, fit: BoxFit.cover)
+                  else
+                    ColoredBox(
+                      color: theme.colorScheme.surfaceContainerHighest,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.photo_camera,
+                              color: theme.colorScheme.onSurfaceVariant),
+                          const SizedBox(height: 6),
+                          Text('Tocar para agregar',
+                              style: theme.textTheme.bodySmall),
+                        ],
                       ),
-                      child: const Icon(Icons.check, color: Colors.green, size: 16),
                     ),
-                  ),
+                  if (_cargando)
+                    ColoredBox(
+                      color: Colors.black.withValues(alpha: 0.35),
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                  if (capturada && !_cargando)
+                    Positioned(
+                      top: 6,
+                      right: 6,
+                      child: Icon(Icons.verified,
+                          color: theme.colorScheme.onSurface, size: 22),
+                    ),
                 ],
               ),
             ),

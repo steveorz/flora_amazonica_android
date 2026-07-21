@@ -1,45 +1,45 @@
-import '../../models/usuario.dart';
-import '../../models/rol.dart'; // assuming these exist, actually rol is in constants, let's use String or EstadoUsuario properly.
-import '../../../core/constants/estado_registro.dart'; // and EstadoUsuario
-import '../../../core/constants/rol.dart';
-import '../../../core/network/api_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/constants/rol.dart';
+import '../../core/network/api_client.dart';
+import '../models/usuario.dart';
 
 abstract class UsuarioRepository {
   Future<List<Usuario>> listar();
   Future<Usuario> get(String id);
   Future<void> actualizarEstado(String id, EstadoUsuario nuevo);
   Future<void> actualizarRol(String id, Rol nuevo);
+  Future<void> actualizarDeviceToken(String token);
 }
 
 class RealUsuarioRepository implements UsuarioRepository {
-  final APIClient apiClient = APIClient.shared;
-
   @override
   Future<List<Usuario>> listar() async {
-    final List<dynamic> records = await apiClient.request(endpoint: "/usuarios");
-    return records.map((r) => Usuario.fromJson(r)).toList();
+    final json = await apiClient.get('/usuarios');
+    if (json is! List) return const [];
+    return json.map((e) => Usuario.fromDto(e as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<Usuario> get(String id) async {
-    final record = await apiClient.request(endpoint: "/usuarios/$id");
-    return Usuario.fromJson(record);
+    final json = await apiClient.get('/usuarios/$id');
+    return Usuario.fromDto(json as Map<String, dynamic>);
   }
 
   @override
   Future<void> actualizarEstado(String id, EstadoUsuario nuevo) async {
-    final body = {"status": nuevo.name};
-    await apiClient.request(endpoint: "/usuarios/$id/estado", method: "PATCH", body: body);
+    await apiClient.patch('/usuarios/$id/estado', body: {'status': nuevo.name});
   }
 
   @override
   Future<void> actualizarRol(String id, Rol nuevo) async {
-    final body = {"role": nuevo.name};
-    await apiClient.request(endpoint: "/usuarios/$id/rol", method: "PATCH", body: body);
+    await apiClient.patch('/usuarios/$id/rol', body: {'role': nuevo.name});
+  }
+
+  @override
+  Future<void> actualizarDeviceToken(String token) async {
+    await apiClient.post('/usuarios/device-token', body: {'device_token': token});
   }
 }
 
-final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) {
-  return RealUsuarioRepository();
-});
+final usuarioRepositoryProvider = Provider<UsuarioRepository>((ref) => RealUsuarioRepository());

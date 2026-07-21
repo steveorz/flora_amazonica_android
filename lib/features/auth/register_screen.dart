@@ -61,8 +61,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       await ref.read(sessionProvider.notifier).register(form);
       setState(() => _loading = false);
       if (mounted) {
-        // Go back to login or auto login (depends on backend, usually auto login or inactive)
-        context.go('/');
+        // La cuenta queda pendiente de activación: no hay sesión todavía.
+        context.go('/account-created');
       }
     } catch (e) {
       setState(() { _error = e.toString(); _loading = false; });
@@ -81,7 +81,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          const AuthBackground(blurred: true),
+          const FondoAuthDesenfocado(),
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),

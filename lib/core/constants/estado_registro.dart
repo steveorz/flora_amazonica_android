@@ -5,11 +5,16 @@ enum EstadoRegistro {
   enRevision('en_revision'),
   observado('observado'),
   validado('validado'),
-  rechazado('rechazado'),
-  publicado('publicado');
+  rechazado('rechazado');
 
   final String value;
   const EstadoRegistro(this.value);
+
+  /// iOS cae a `.borrador` cuando el backend manda un estado desconocido o nulo.
+  static EstadoRegistro fromRaw(String? raw) => EstadoRegistro.values.firstWhere(
+        (e) => e.value == raw,
+        orElse: () => EstadoRegistro.borrador,
+      );
 
   String get label {
     switch (this) {
@@ -23,8 +28,6 @@ enum EstadoRegistro {
         return "Validado";
       case EstadoRegistro.rechazado:
         return "Rechazado";
-      case EstadoRegistro.publicado:
-        return "Publicado";
     }
   }
 
@@ -33,15 +36,13 @@ enum EstadoRegistro {
       case EstadoRegistro.borrador:
         return Colors.grey;
       case EstadoRegistro.enRevision:
-        return Colors.blue;
+        return Colors.indigo;
       case EstadoRegistro.observado:
         return Colors.orange;
       case EstadoRegistro.validado:
-        return Colors.blue;
+        return Colors.green;
       case EstadoRegistro.rechazado:
         return Colors.red;
-      case EstadoRegistro.publicado:
-        return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black; // BrandColor
     }
   }
 }

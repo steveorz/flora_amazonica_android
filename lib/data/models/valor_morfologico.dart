@@ -15,6 +15,16 @@ class ValorMorfologico {
 
   String get id => codigo;
 
+  ValorMorfologico copyWith({String? categoria, String? nombre, int? orden, bool? activo}) {
+    return ValorMorfologico(
+      categoria: categoria ?? this.categoria,
+      nombre: nombre ?? this.nombre,
+      codigo: codigo,
+      orden: orden ?? this.orden,
+      activo: activo ?? this.activo,
+    );
+  }
+
   factory ValorMorfologico.fromJson(Map<String, dynamic> json) {
     return ValorMorfologico(
       categoria: json['categoria'],

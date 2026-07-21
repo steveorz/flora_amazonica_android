@@ -1,69 +1,77 @@
-import '../../models/notificacion.dart';
-import '../../../core/network/api_client.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/network/api_client.dart';
+import '../models/notificacion.dart';
 
 abstract class NotificacionRepository {
   Future<List<Notificacion>> listar(String usuarioId);
   Future<void> marcarLeida(String id);
   Future<void> marcarTodasLeidas(String usuarioId);
-  Future<void> crear(Notificacion notificacion);
+  Future<void> eliminar(String id);
 }
 
 class RealNotificacionRepository implements NotificacionRepository {
-  final APIClient apiClient = APIClient.shared;
+  /// Traduce el `event_type` del backend al tipo que entiende la UI.
+  /// Para `status_changed` el tipo concreto depende de `metadata.new_status`.
+  /// Espejo de `NotificationDTO.toNotificacion()` (iOS).
+  static TipoNotificacion _tipoDesde(Map<String, dynamic> json) {
+    final eventType = json['event_type'] as String?;
+    switch (eventType) {
+      case 'account_activated':
+        return TipoNotificacion.cuentaActivada;
+      case 'account_deactivated':
+        return TipoNotificacion.sistema;
+      case 'record_received':
+        return TipoNotificacion.enRevision;
+      case 'status_changed':
+        final metadata = json['metadata'];
+        final nuevoEstado = metadata is Map ? metadata['new_status'] as String? : null;
+        return switch (nuevoEstado) {
+          'observado' => TipoNotificacion.observacion,
+          'rechazado' => TipoNotificacion.rechazo,
+          'validado' => TipoNotificacion.validacion,
+          _ => TipoNotificacion.validacion,
+        };
+      default:
+        return TipoNotificacion.sistema;
+    }
+  }
+
+  static Notificacion _toNotificacion(Map<String, dynamic> json) {
+    return Notificacion(
+      id: json['id'] as String,
+      tipo: _tipoDesde(json),
+      titulo: json['title'] as String? ?? '',
+      descripcion: json['description'] as String? ?? '',
+      fecha: parseApiDate(json['created_at']),
+      leida: json['is_read'] as bool? ?? false,
+      registroRelacionadoId: json['species_record_id'] as String?,
+      usuarioId: json['user_id'] as String?,
+    );
+  }
 
   @override
   Future<List<Notificacion>> listar(String usuarioId) async {
-    final List<dynamic> records = await apiClient.request(endpoint: "/notifications/user/$usuarioId");
-    return records.map((r) {
-      // Map Swift DTO logic here for simplicity if backend returns raw event_types
-      final eventType = r['event_type'];
-      TipoNotificacion tipo = TipoNotificacion.sistema;
-      
-      switch (eventType) {
-        case "account_activated": tipo = TipoNotificacion.cuentaActivada; break;
-        case "record_received": tipo = TipoNotificacion.enRevision; break;
-        case "status_changed":
-          final status = r['metadata']?['new_status'];
-          switch (status) {
-            case "observado": tipo = TipoNotificacion.observacion; break;
-            case "rechazado": tipo = TipoNotificacion.rechazo; break;
-            case "publicado": tipo = TipoNotificacion.publicacion; break;
-            case "validado": tipo = TipoNotificacion.validacion; break;
-            default: tipo = TipoNotificacion.validacion; break;
-          }
-          break;
-      }
-      
-      return Notificacion(
-        id: r['id'],
-        tipo: tipo,
-        titulo: r['title'],
-        descripcion: r['description'],
-        fecha: DateTime.parse(r['created_at']),
-        leida: r['is_read'],
-        registroRelacionadoId: r['species_record_id'],
-        usuarioId: r['user_id'],
-      );
-    }).toList();
+    final json = await apiClient.get('/notifications/user/$usuarioId');
+    if (json is! List) return const [];
+    return json.map((e) => _toNotificacion(e as Map<String, dynamic>)).toList();
   }
 
   @override
   Future<void> marcarLeida(String id) async {
-    await apiClient.request(endpoint: "/notifications/$id/read", method: "PATCH");
+    await apiClient.patch('/notifications/$id/read');
   }
 
   @override
   Future<void> marcarTodasLeidas(String usuarioId) async {
-    await apiClient.request(endpoint: "/notifications/user/$usuarioId/read-all", method: "PATCH");
+    await apiClient.patch('/notifications/user/$usuarioId/read-all');
   }
 
   @override
-  Future<void> crear(Notificacion notificacion) async {
-    // Done on backend mostly
+  Future<void> eliminar(String id) async {
+    await apiClient.delete('/notifications/$id');
   }
 }
 
-final notificacionRepositoryProvider = Provider<NotificacionRepository>((ref) {
-  return RealNotificacionRepository();
-});
+final notificacionRepositoryProvider =
+    Provider<NotificacionRepository>((ref) => RealNotificacionRepository());

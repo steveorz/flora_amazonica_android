@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../data/models/usuario.dart';
-import '../theme/brand_colors.dart';
 
 class ProfileAvatarView extends StatelessWidget {
   final Usuario user;

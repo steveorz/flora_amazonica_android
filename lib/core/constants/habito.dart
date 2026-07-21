@@ -7,6 +7,15 @@ enum Habito {
   liana,
   hierba;
 
+  /// iOS cae a `.arbol` cuando el backend manda un hábito desconocido o nulo.
+  static Habito fromRaw(String? raw) => Habito.values.firstWhere(
+        (e) => e.name == raw?.toLowerCase(),
+        orElse: () => Habito.arbol,
+      );
+
+  /// Ruta del asset con la foto representativa de la categoría.
+  String get categoryAsset => 'assets/images/${name}_category.jpg';
+
   String get label {
     switch (this) {
       case Habito.arbol:

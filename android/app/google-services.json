@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "956920768362",
+    "project_id": "floramaz",
+    "storage_bucket": "floramaz.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:956920768362:android:32a02d08243878c8d9a713",
+        "android_client_info": {
+          "package_name": "com.flora_amazonica.flora_amazonica"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDtW80u5w6iPKlv0cDJQxa0xE0GdgvsT8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

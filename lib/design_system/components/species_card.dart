@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/especie.dart';
 import '../../core/constants/habito.dart';
@@ -8,11 +9,13 @@ enum SpeciesCardVariant { lista, galeria, mini }
 class SpeciesCard extends StatelessWidget {
   final Especie especie;
   final SpeciesCardVariant variant;
+  final Widget? trailing;
 
   const SpeciesCard({
     super.key,
     required this.especie,
     this.variant = SpeciesCardVariant.lista,
+    this.trailing,
   });
 
   Color _getHabitoColor() {
@@ -25,29 +28,36 @@ class SpeciesCard extends StatelessWidget {
         return Colors.lightGreen;
       case Habito.liana:
         return Colors.brown;
-      case Habito.epifita:
-        return Colors.purple;
       case Habito.palmera:
         return Colors.teal;
-      case Habito.helecho:
-        return Colors.green.shade800;
     }
   }
 
   Widget _buildThumbnail(double size, double iconSize) {
     final color = _getHabitoColor();
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Center(
-        child: Icon(
-          Icons.eco, // leaf analog
-          color: color,
-          size: iconSize,
+
+    // Ícono de hábito tintado: el fallback cuando la especie no tiene foto.
+    Widget placeholder() => Center(child: Icon(Icons.eco, color: color, size: iconSize));
+
+    final portada = especie.portadaUrl;
+    final finito = size.isFinite;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(variant == SpeciesCardVariant.lista ? size / 2 : 10),
+      child: SizedBox(
+        width: finito ? size : null,
+        height: finito ? size : null,
+        child: ColoredBox(
+          color: color.withValues(alpha: 0.18),
+          child: (portada != null && portada.isNotEmpty)
+              // Si hay foto de portada la mostramos; si no, el ícono de hábito.
+              ? CachedNetworkImage(
+                  imageUrl: portada,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => placeholder(),
+                  errorWidget: (_, __, ___) => placeholder(),
+                )
+              : placeholder(),
         ),
       ),
     );
@@ -66,43 +76,54 @@ class SpeciesCard extends StatelessWidget {
   }
 
   Widget _buildLista(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildThumbnail(68, 22),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  especie.nombreCientifico,
-                  style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 16),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+    final colorScheme = Theme.of(context).colorScheme;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        _buildThumbnail(46, 18),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                especie.displayTitle,
+                style: TextStyle(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface, // Color principal harmonizado
                 ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
                 Text(
                   especie.familia,
-                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant, // Color secundario harmonizado
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
                 if (especie.nombreLocal.isNotEmpty)
                   Text(
                     especie.nombreLocal,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
               ],
-            ),
           ),
-          const SizedBox(width: 8),
-          EstadoBadge(estado: especie.estado),
-        ],
-      ),
+        ),
+        const SizedBox(width: 8),
+        trailing ?? EstadoBadge(estado: especie.estado),
+      ],
     );
   }
 
@@ -116,7 +137,7 @@ class SpeciesCard extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          especie.nombreCientifico,
+          especie.displayTitle,
           style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 14),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -141,7 +162,7 @@ class SpeciesCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                especie.nombreCientifico,
+                especie.displayTitle,
                 style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 14),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

@@ -1,7 +1,15 @@
+import '../../core/constants/rol.dart';
+import '../../core/network/api_client.dart';
+
 enum EstadoUsuario {
   activo,
   inactivo,
-  pendiente
+  pendiente;
+
+  static EstadoUsuario fromRaw(String? raw) => EstadoUsuario.values.firstWhere(
+        (e) => e.name == raw?.toLowerCase(),
+        orElse: () => EstadoUsuario.pendiente,
+      );
 }
 
 class Usuario {
@@ -12,12 +20,12 @@ class Usuario {
   final String email;
   final String institucion;
   final String cargo;
-  final String rol; // Podríamos usar el enum Rol, pero como lo parseamos de JSON usaremos String por ahora o importaremos Rol
+  final Rol rol;
   final EstadoUsuario estado;
   final DateTime fechaRegistro;
   final String? avatarUrl;
 
-  Usuario({
+  const Usuario({
     required this.id,
     required this.nombres,
     required this.apellidos,
@@ -31,37 +39,62 @@ class Usuario {
     this.avatarUrl,
   });
 
-  String get nombreCompleto => "$nombres $apellidos";
+  String get nombreCompleto => '$nombres $apellidos';
 
-  factory Usuario.fromJson(Map<String, dynamic> json) {
+  /// Iniciales para el avatar cuando no hay foto (ej. "MG").
+  String get iniciales {
+    final n = nombres.trim().isNotEmpty ? nombres.trim()[0] : '';
+    final a = apellidos.trim().isNotEmpty ? apellidos.trim()[0] : '';
+    final ini = '$n$a'.toUpperCase();
+    return ini.isEmpty ? '?' : ini;
+  }
+
+  Usuario copyWith({
+    String? nombres,
+    String? apellidos,
+    String? dni,
+    String? institucion,
+    String? cargo,
+    Rol? rol,
+    EstadoUsuario? estado,
+    String? avatarUrl,
+  }) {
     return Usuario(
-      id: json['id'],
-      nombres: json['nombres'],
-      apellidos: json['apellidos'],
-      dni: json['dni'],
-      email: json['email'],
-      institucion: json['institucion'],
-      cargo: json['cargo'],
-      rol: json['rol'],
-      estado: EstadoUsuario.values.firstWhere((e) => e.name == json['estado'], orElse: () => EstadoUsuario.pendiente),
-      fechaRegistro: DateTime.parse(json['fechaRegistro']),
-      avatarUrl: json['avatarUrl'],
+      id: id,
+      nombres: nombres ?? this.nombres,
+      apellidos: apellidos ?? this.apellidos,
+      dni: dni ?? this.dni,
+      email: email,
+      institucion: institucion ?? this.institucion,
+      cargo: cargo ?? this.cargo,
+      rol: rol ?? this.rol,
+      estado: estado ?? this.estado,
+      fechaRegistro: fechaRegistro,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'nombres': nombres,
-      'apellidos': apellidos,
-      'dni': dni,
-      'email': email,
-      'institucion': institucion,
-      'cargo': cargo,
-      'rol': rol,
-      'estado': estado.name,
-      'fechaRegistro': fechaRegistro.toIso8601String(),
-      'avatarUrl': avatarUrl,
-    };
+  /// Mapea el `UserDTO` que devuelve NestJS (snake_case), igual que
+  /// `UserDTO.toUsuario()` en iOS: los apellidos se concatenan y los campos
+  /// opcionales caen a cadena vacía.
+  factory Usuario.fromDto(Map<String, dynamic> json) {
+    final paterno = (json['paternal_last_name'] as String?) ?? '';
+    final materno = json['maternal_last_name'] as String?;
+    final apellidos =
+        (materno != null && materno.isNotEmpty) ? '$paterno $materno' : paterno;
+
+    return Usuario(
+      id: json['id'] as String,
+      nombres: (json['first_name'] as String?) ?? '',
+      apellidos: apellidos,
+      dni: (json['dni'] as String?) ?? '',
+      email: (json['email'] as String?) ?? '',
+      institucion: (json['institution'] as String?) ?? '',
+      cargo: (json['position'] as String?) ?? '',
+      rol: Rol.fromRaw(json['role'] as String?),
+      estado: EstadoUsuario.fromRaw(json['status'] as String?),
+      fechaRegistro: parseApiDate(json['created_at']),
+      avatarUrl: json['avatar_url'] as String?,
+    );
   }
 }

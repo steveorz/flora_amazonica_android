@@ -5,10 +5,19 @@ enum TipoFoto {
   hoja('hoja'),
   flor('flor'),
   fruto('fruto'),
-  talloCorteza('tallo_corteza');
+  semilla('semilla');
 
   final String value;
   const TipoFoto(this.value);
+
+  /// Devuelve null si el backend manda un tipo desconocido: iOS descarta
+  /// esas fotos (`compactMap` sobre `TipoFoto(rawValue:)`).
+  static TipoFoto? fromRaw(String? raw) {
+    for (final t in TipoFoto.values) {
+      if (t.value == raw) return t;
+    }
+    return null;
+  }
 
   String get label {
     switch (this) {
@@ -16,7 +25,7 @@ enum TipoFoto {
       case TipoFoto.hoja: return "Hoja";
       case TipoFoto.flor: return "Flor";
       case TipoFoto.fruto: return "Fruto";
-      case TipoFoto.talloCorteza: return "Tallo / corteza";
+      case TipoFoto.semilla: return "Semilla";
     }
   }
 }

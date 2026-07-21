@@ -5,13 +5,29 @@ class Ubicacion {
   final double altitud; // Metros sobre el nivel del mar
   final String tipoHabitat;
 
-  Ubicacion({
+  const Ubicacion({
     required this.lat,
     required this.long,
     required this.referencia,
     required this.altitud,
     required this.tipoHabitat,
   });
+
+  Ubicacion copyWith({
+    double? lat,
+    double? long,
+    String? referencia,
+    double? altitud,
+    String? tipoHabitat,
+  }) {
+    return Ubicacion(
+      lat: lat ?? this.lat,
+      long: long ?? this.long,
+      referencia: referencia ?? this.referencia,
+      altitud: altitud ?? this.altitud,
+      tipoHabitat: tipoHabitat ?? this.tipoHabitat,
+    );
+  }
 
   factory Ubicacion.fromJson(Map<String, dynamic> json) {
     return Ubicacion(

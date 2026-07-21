@@ -1,94 +1,109 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
 import '../constants/app_colors.dart';
 
+/// Tema de la app. Usa **Roboto**, la tipografía oficial de Material Design,
+/// para que FlorAmaz se vea consistente con las apps nativas de Android, y el
+/// type scale de Material 3.
 class AppTheme {
-  static ThemeData get lightTheme {
+  /// Roboto aplicado sobre el type scale de Material 3 (display / headline /
+  /// title / body / label). `google_fonts` descarga la fuente en tiempo de
+  /// ejecución y la cachea.
+  static TextTheme _texto(TextTheme base) => GoogleFonts.robotoTextTheme(base);
+
+  /// Transición de página al estilo Android moderno (zoom + fade), la que M3
+  /// usa por defecto en todas las plataformas.
+  static const PageTransitionsTheme _transiciones = PageTransitionsTheme(
+    builders: {
+      TargetPlatform.android: ZoomPageTransitionsBuilder(),
+      TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+    },
+  );
+
+  static ThemeData get lightTheme => _base(Brightness.light);
+  static ThemeData get darkTheme => _base(Brightness.dark);
+
+  static ThemeData _base(Brightness brightness) {
+    final oscuro = brightness == Brightness.dark;
+
+    // Genera la paleta asegurando que los tonos respeten la semilla verde.
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppColors.primary,
+      brightness: brightness,
+      dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+      surfaceTint: Colors.transparent,
+    );
+
+    final base = ThemeData(brightness: brightness);
+
     return ThemeData(
-      primaryColor: AppColors.primary,
-      scaffoldBackgroundColor: AppColors.background,
-      colorScheme: const ColorScheme.light(
-        primary: AppColors.primary,
-        secondary: AppColors.secondary,
-        tertiary: AppColors.tertiary,
-        surface: AppColors.background,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: AppColors.background,
+      useMaterial3: true,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: oscuro ? AppColors.backgroundDark : AppColors.background,
+      textTheme: _texto(base.textTheme),
+      pageTransitionsTheme: _transiciones,
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
-        iconTheme: IconThemeData(color: AppColors.primary),
-        titleTextStyle: TextStyle(
-          color: AppColors.primary,
+        iconTheme: IconThemeData(color: oscuro ? Colors.white : AppColors.primary),
+        titleTextStyle: GoogleFonts.roboto(
+          color: oscuro ? Colors.white : AppColors.primary,
           fontSize: 20,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      textTheme: GoogleFonts.publicSansTextTheme().copyWith(
-        displayLarge: GoogleFonts.spaceGrotesk(
-          fontSize: 44,
-          fontWeight: FontWeight.w700,
-          height: 1.05,
-          letterSpacing: -0.5,
-          color: AppColors.textPrimary,
-        ),
-        displayMedium: GoogleFonts.spaceGrotesk(
-          fontSize: 32,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
-        ),
-        headlineLarge: GoogleFonts.spaceGrotesk(
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          color: AppColors.textPrimary,
-        ),
-        bodyLarge: GoogleFonts.publicSans(
-          fontSize: 16,
-          color: AppColors.textPrimary,
-        ),
-        bodyMedium: GoogleFonts.publicSans(
-          fontSize: 14,
-          color: AppColors.textSecondary,
-        ),
-        labelSmall: GoogleFonts.publicSans(
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-          color: AppColors.tertiary,
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: AppColors.textLight,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-          textStyle: GoogleFonts.publicSans(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          fontWeight: FontWeight.w600,
         ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: Colors.white,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        fillColor: oscuro ? const Color(0xFF1E1E1E) : Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
+          borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(30),
-          borderSide: const BorderSide(color: AppColors.primary, width: 2),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(color: colorScheme.primary, width: 2),
         ),
-        hintStyle: GoogleFonts.publicSans(color: Colors.grey.shade400),
       ),
+      navigationBarTheme: _navigationBarTheme(brightness),
+    );
+  }
+
+  /// Verde amazónico sólo para la selección de la barra, como en iOS
+  /// (`.tint(Color.navigationSelection)`).
+  static NavigationBarThemeData _navigationBarTheme(Brightness brightness) {
+    final oscuro = brightness == Brightness.dark;
+    return NavigationBarThemeData(
+      elevation: 0,
+      backgroundColor: oscuro
+          ? Color.lerp(AppColors.backgroundDark, Colors.black, 0.20) // ~20% más oscuro en modo oscuro
+          : Color.lerp(AppColors.background, Colors.black, 0.03), // ~3% más oscuro en modo claro (hueso muy sutil)
+      indicatorColor: AppColors.navigationSelection.withValues(alpha: 0.2),
+      labelTextStyle: WidgetStateProperty.resolveWith((states) {
+        final seleccionado = states.contains(WidgetState.selected);
+        return GoogleFonts.roboto(
+          fontSize: 12,
+          fontWeight: seleccionado ? FontWeight.bold : FontWeight.w500,
+          color: seleccionado
+              ? AppColors.navigationSelection
+              : (oscuro ? Colors.grey.shade400 : Colors.grey),
+        );
+      }),
+      iconTheme: WidgetStateProperty.resolveWith((states) {
+        final seleccionado = states.contains(WidgetState.selected);
+        return IconThemeData(
+          color: seleccionado
+              ? AppColors.navigationSelection
+              : (oscuro ? Colors.grey.shade400 : Colors.grey),
+        );
+      }),
     );
   }
 }
